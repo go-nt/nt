@@ -2,14 +2,58 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 )
 
+type serverConfig struct {
+	// 端口号
+	Port uint16
+}
+
 type Server struct {
+	// 参数配置
+	config *serverConfig
+
+	// 处理器
 	handlers map[string]Handler
 }
 
+// initConfig 初始化配置
+func (server *Server) initConfig() {
+	server.config = &serverConfig{
+		// 端口号
+		Port: 9999,
+	}
+}
+
+// Config 参数配置
+func (server *Server) Config(config map[string]any) {
+	if server.config == nil {
+		server.initConfig()
+	}
+
+	for key, value := range config {
+		switch key {
+		case "port":
+			server.config.Port = value.(uint16)
+		}
+	}
+}
+
+func (server *Server) AddRHandler(appName string, handler Handler) {
+	if server.handlers == nil {
+		server.handlers = make(map[string]Handler)
+	}
+
+	server.handlers[appName] = handler
+}
+
 // Start 启动服务
-func (server *Server) Start(port int) {
+func (server *Server) Start() {
+
+	if server.config == nil {
+		server.initConfig()
+	}
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 
@@ -48,17 +92,8 @@ func (server *Server) Start(port int) {
 		}
 	})
 
-	err := http.ListenAndServe(":9999", nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(server.config.Port)), nil)
 	if err != nil {
 		return
 	}
-}
-
-func (server *Server) AddRHandler(appName string, handler Handler) *Server {
-	if server.handlers == nil {
-		server.handlers = make(map[string]Handler)
-	}
-
-	server.handlers[appName] = handler
-	return server
 }
