@@ -7,7 +7,7 @@ import (
 
 type serverConfig struct {
 	// 端口号
-	Port uint16
+	port uint16
 }
 
 type Server struct {
@@ -22,7 +22,7 @@ type Server struct {
 func (server *Server) initConfig() {
 	server.config = &serverConfig{
 		// 端口号
-		Port: 9999,
+		port: 9999,
 	}
 }
 
@@ -35,7 +35,7 @@ func (server *Server) Config(config map[string]any) {
 	for key, value := range config {
 		switch key {
 		case "port":
-			server.config.Port = value.(uint16)
+			server.config.port = value.(uint16)
 		}
 	}
 }
@@ -55,7 +55,7 @@ func (server *Server) Start() {
 		server.initConfig()
 	}
 
-	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		if server.handlers != nil {
 
@@ -74,14 +74,8 @@ func (server *Server) Start() {
 			if appName != "" {
 				if handler, ok := server.handlers[appName]; ok {
 
-					req := new(Request)
-					req.Init(r)
-
-					res := new(Response)
-					res.Init(rw)
-
 					c := new(Context)
-					c.Init(req, res)
+					c.Init(r, w)
 
 					// 回收资源
 					defer c.Gc()
@@ -92,7 +86,7 @@ func (server *Server) Start() {
 		}
 	})
 
-	err := http.ListenAndServe(":"+strconv.Itoa(int(server.config.Port)), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(int(server.config.port)), nil)
 	if err != nil {
 		return
 	}
