@@ -40,12 +40,12 @@ func (server *Server) Config(config map[string]any) {
 	}
 }
 
-func (server *Server) AddHandler(appName string, handler Handler) {
+func (server *Server) AddHandler(handlerName string, handler Handler) {
 	if server.handlers == nil {
 		server.handlers = make(map[string]Handler)
 	}
 
-	server.handlers[appName] = handler
+	server.handlers[handlerName] = handler
 }
 
 // Start 启动服务
@@ -60,19 +60,24 @@ func (server *Server) Start() {
 		if server.handlers != nil {
 
 			path := r.URL.Path
-			appName := ""
+			handlerName := ""
 			i := 1
 			l := len(path)
 			for i < l {
 				if path[i] == '/' {
-					appName = path[1:i]
+					handlerName = path[1:i]
 					break
 				}
 				i++
 			}
 
-			if appName != "" {
-				if handler, ok := server.handlers[appName]; ok {
+			if handlerName == "" {
+				_, err := w.Write([]byte("<a href=\"https://www.go-nt.com\" target=\"_blank\">GO-NT</a> framework!"))
+				if err != nil {
+					return
+				}
+			} else {
+				if handler, ok := server.handlers[handlerName]; ok {
 
 					c := new(Context)
 					c.Init(r, w)
@@ -81,6 +86,11 @@ func (server *Server) Start() {
 					defer c.Gc()
 
 					handler.OnRequest(c)
+				} else {
+					_, err := w.Write([]byte("Handler(" + handlerName + ") does not exist!"))
+					if err != nil {
+						return
+					}
 				}
 			}
 		}
