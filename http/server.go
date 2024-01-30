@@ -40,7 +40,7 @@ func (server *Server) Config(config map[string]any) {
 	}
 }
 
-func (server *Server) AddRHandler(appName string, handler Handler) {
+func (server *Server) AddHandler(appName string, handler Handler) {
 	if server.handlers == nil {
 		server.handlers = make(map[string]Handler)
 	}
