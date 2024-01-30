@@ -8,6 +8,9 @@ import (
 type serverConfig struct {
 	// 端口号
 	port uint16
+
+	// 默认处理器名称
+	defaultHandlerMame string
 }
 
 type Server struct {
@@ -23,6 +26,8 @@ func (server *Server) initConfig() {
 	server.config = &serverConfig{
 		// 端口号
 		port: 9999,
+
+		defaultHandlerMame: "",
 	}
 }
 
@@ -71,6 +76,10 @@ func (server *Server) Start() {
 				i++
 			}
 
+			if handlerName == "" && server.config.defaultHandlerMame != "" {
+				handlerName = server.config.defaultHandlerMame
+			}
+
 			if handlerName == "" {
 				_, err := w.Write([]byte("<a href=\"https://www.go-nt.com\" target=\"_blank\">GO-NT</a> framework!"))
 				if err != nil {
@@ -87,7 +96,7 @@ func (server *Server) Start() {
 
 					handler.OnRequest(c)
 				} else {
-					_, err := w.Write([]byte("Handler(" + handlerName + ") does not exist!"))
+					_, err := w.Write([]byte("Handler(" + handlerName + ") does not exist"))
 					if err != nil {
 						return
 					}
