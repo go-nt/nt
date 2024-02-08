@@ -48,16 +48,16 @@ func (r *Request) GetArray(name string) []string {
 }
 
 // GetFormat 获取 GET 格式化数据
-func (r *Request) GetFormat(name string) request.Format {
+func (r *Request) GetFormat(name string) *request.Format {
 	if values, ok := r.dGet[name]; ok {
 		if len(values) > 0 {
-			return request.Format{
+			return &request.Format{
 				Value: values[0],
 			}
 		}
 	}
 
-	return request.Format{}
+	return &request.Format{}
 }
 
 // GetMap 获取 所有 GET 数据
@@ -86,16 +86,16 @@ func (r *Request) PostArray(name string) []string {
 }
 
 // PostFormat 获取 POST 格式化数据
-func (r *Request) PostFormat(name string) request.Format {
+func (r *Request) PostFormat(name string) *request.Format {
 	if values, ok := r.dPost[name]; ok {
 		if len(values) > 0 {
-			return request.Format{
+			return &request.Format{
 				Value: values[0],
 			}
 		}
 	}
 
-	return request.Format{}
+	return &request.Format{}
 }
 
 // PostMap 获取 所有 POST 数据
@@ -141,16 +141,16 @@ func (r *Request) Header(name string, defaultValue string) string {
 }
 
 // HeaderFormat 获取头信息
-func (r *Request) HeaderFormat(name string) request.Format {
+func (r *Request) HeaderFormat(name string) *request.Format {
 	if values, ok := r.Request.Header[name]; ok {
 		if len(values) > 0 {
-			return request.Format{
+			return &request.Format{
 				Value: values[0],
 			}
 		}
 	}
 
-	return request.Format{}
+	return &request.Format{}
 }
 
 // HeaderArray 获取 string 数组 类型的 头信息
