@@ -1,38 +1,35 @@
 package http
 
 import (
+	"encoding/json"
+	"github.com/go-nt/nt/http/request"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 type Request struct {
-	Request    *http.Request
-	dataOfGet  url.Values
-	dataOfPost url.Values
+	Request *http.Request
+	dGet    url.Values
+	dPost   url.Values
 }
 
 func (r *Request) Init(request *http.Request) {
 	r.Request = request
-	r.dataOfGet = request.URL.Query()
+	r.dGet = request.URL.Query()
 
 	err := request.ParseForm()
 	if err != nil {
 		return
 	}
 
-	r.dataOfPost = request.PostForm
-}
-
-// GetAll 获取 所有 GET 数据
-func (r *Request) GetAll() map[string][]string {
-	return r.dataOfGet
+	r.dPost = request.PostForm
 }
 
 // Get 获取 string 类型的 GET 数据
 func (r *Request) Get(name string, defaultValue string) string {
-	if values, ok := r.dataOfGet[name]; ok {
+	if values, ok := r.dGet[name]; ok {
 		if len(values) > 0 {
 			return values[0]
 		}
@@ -41,214 +38,95 @@ func (r *Request) Get(name string, defaultValue string) string {
 	return defaultValue
 }
 
-// GetArray 获取 string 类型的 GET 数据数组
+// GetArray 获取 string 数组 类型的 GET 数据
 func (r *Request) GetArray(name string) []string {
-	if values, ok := r.dataOfGet[name]; ok {
+	if values, ok := r.dGet[name]; ok {
 		return values
 	}
 
 	return []string{}
 }
 
-// GetByte 获取 byte 类型的 GET 数据
-func (r *Request) GetByte(name string, defaultValue byte) byte {
-	v := r.Get(name, "")
-	if len(v) != 1 {
-		return defaultValue
+// GetFormat 获取 GET 格式化数据
+func (r *Request) GetFormat(name string) request.Format {
+	if values, ok := r.dGet[name]; ok {
+		if len(values) > 0 {
+			return request.Format{
+				Value: values[0],
+			}
+		}
 	}
 
-	return v[0]
+	return request.Format{}
 }
 
-// GetInt 获取 int 类型的 GET 数据
-func (r *Request) GetInt(name string, defaultValue int) int {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	intVal, err := strconv.Atoi(v)
-	if err != nil {
-		return defaultValue
-	}
-
-	return intVal
-}
-
-// GetInt8 获取 int8 类型的 GET 数据
-func (r *Request) GetInt8(name string, defaultValue int8) int8 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseInt(v, 10, 8)
-	if err != nil {
-		return defaultValue
-	}
-
-	return int8(val)
-}
-
-// GetInt16 获取 int16 类型的 GET 数据
-func (r *Request) GetInt16(name string, defaultValue int16) int16 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseInt(v, 10, 16)
-	if err != nil {
-		return defaultValue
-	}
-
-	return int16(val)
-}
-
-// GetInt32 获取 int32 类型的 GET 数据
-func (r *Request) GetInt32(name string, defaultValue int32) int32 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseInt(v, 10, 32)
-	if err != nil {
-		return defaultValue
-	}
-
-	return int32(val)
-}
-
-// GetInt64 获取 int64 类型的 GET 数据
-func (r *Request) GetInt64(name string, defaultValue int64) int64 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return defaultValue
-	}
-
-	return val
-}
-
-// GetUint 获取 uint 类型的 GET 数据
-func (r *Request) GetUint(name string, defaultValue uint) uint {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseUint(v, 10, 64)
-	if err != nil {
-		return defaultValue
-	}
-
-	return uint(val)
-}
-
-// GetUint8 获取 uint8 类型的 GET 数据
-func (r *Request) GetUint8(name string, defaultValue uint8) uint8 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseUint(v, 10, 8)
-	if err != nil {
-		return defaultValue
-	}
-
-	return uint8(val)
-}
-
-// GetUint16 获取 uint16 类型的 GET 数据
-func (r *Request) GetUint16(name string, defaultValue uint16) uint16 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseUint(v, 10, 16)
-	if err != nil {
-		return defaultValue
-	}
-
-	return uint16(val)
-}
-
-// GetUint32 获取 uint32 类型的 GET 数据
-func (r *Request) GetUint32(name string, defaultValue uint32) uint32 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseUint(v, 10, 32)
-	if err != nil {
-		return defaultValue
-	}
-
-	return uint32(val)
-}
-
-// GetUnt64 获取 uint64 类型的 GET 数据
-func (r *Request) GetUnt64(name string, defaultValue uint64) uint64 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseUint(v, 10, 64)
-	if err != nil {
-		return defaultValue
-	}
-
-	return val
-}
-
-// GetFloat32 获取 float32 类型的 GET 数据
-func (r *Request) GetFloat32(name string, defaultValue float32) float32 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseFloat(v, 32)
-	if err != nil {
-		return defaultValue
-	}
-
-	return float32(val)
-}
-
-// GetFloat64 获取 float64 类型的 GET 数据
-func (r *Request) GetFloat64(name string, defaultValue float64) float64 {
-	v := r.Get(name, "")
-	if v == "" {
-		return defaultValue
-	}
-
-	val, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return defaultValue
-	}
-
-	return val
+// GetMap 获取 所有 GET 数据
+func (r *Request) GetMap() map[string][]string {
+	return r.dGet
 }
 
 // Post 获取 string 类型的 POST 数据
 func (r *Request) Post(name string, defaultValue string) string {
-	if values, ok := r.dataOfPost[name]; ok {
+	if values, ok := r.dPost[name]; ok {
 		if len(values) > 0 {
 			return values[0]
 		}
 	}
 
 	return defaultValue
+}
+
+// PostArray 获取 string 数组 类型的 POST 数据
+func (r *Request) PostArray(name string) []string {
+	if values, ok := r.dPost[name]; ok {
+		return values
+	}
+
+	return []string{}
+}
+
+// PostFormat 获取 POST 格式化数据
+func (r *Request) PostFormat(name string) request.Format {
+	if values, ok := r.dPost[name]; ok {
+		if len(values) > 0 {
+			return request.Format{
+				Value: values[0],
+			}
+		}
+	}
+
+	return request.Format{}
+}
+
+// PostMap 获取 所有 POST 数据
+func (r *Request) PostMap() map[string][]string {
+	return r.dPost
+}
+
+// Body 获取请求休
+func (r *Request) Body(defaultValue string) string {
+	bodyBytes, err := io.ReadAll(r.Request.Body)
+	if err != nil {
+		return defaultValue
+	}
+
+	return string(bodyBytes)
+}
+
+// Json 获取请求休并尝试转为 JSON 格式
+func (r *Request) Json(defaultValue any) any {
+	bodyBytes, err := io.ReadAll(r.Request.Body)
+	if err != nil {
+		return defaultValue
+	}
+
+	var data any
+	err = json.Unmarshal(bodyBytes, &data)
+	if err != nil {
+		return defaultValue
+	}
+
+	return data
 }
 
 // Header 获取头信息
@@ -260,6 +138,33 @@ func (r *Request) Header(name string, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+// HeaderFormat 获取头信息
+func (r *Request) HeaderFormat(name string) request.Format {
+	if values, ok := r.Request.Header[name]; ok {
+		if len(values) > 0 {
+			return request.Format{
+				Value: values[0],
+			}
+		}
+	}
+
+	return request.Format{}
+}
+
+// HeaderArray 获取 string 数组 类型的 头信息
+func (r *Request) HeaderArray(name string) []string {
+	if values, ok := r.Request.Header[name]; ok {
+		return values
+	}
+
+	return []string{}
+}
+
+// HeaderMap 获取 所有 头信息
+func (r *Request) HeaderMap() map[string][]string {
+	return r.Request.Header
 }
 
 // Cookie 获取 cookie 值
