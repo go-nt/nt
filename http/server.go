@@ -40,7 +40,16 @@ func (server *Server) Config(config map[string]any) {
 	for key, value := range config {
 		switch key {
 		case "port":
-			server.config.port = value.(uint16)
+			switch t := value.(type) {
+			case int:
+				if t > 0 && t < 65535 {
+					server.config.port = uint16(t)
+				}
+			case uint16:
+				if t > 0 {
+					server.config.port = t
+				}
+			}
 		}
 	}
 }

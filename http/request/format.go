@@ -31,6 +31,20 @@ func (f *Format) Int(defaultValue int) int {
 	return intVal
 }
 
+// Rune 格式化为 Rune
+func (f *Format) Rune(defaultValue rune) rune {
+	if f.Value == "" {
+		return defaultValue
+	}
+
+	intVal, err := strconv.Atoi(f.Value)
+	if err != nil {
+		return defaultValue
+	}
+
+	return rune(intVal)
+}
+
 // Int8 格式化为 int8
 func (f *Format) Int8(defaultValue int8) int8 {
 	if f.Value == "" {
