@@ -50,6 +50,12 @@ func (server *Server) Config(config map[string]any) {
 					server.config.port = t
 				}
 			}
+		case "defaultHandlerMame":
+		case "default_handler_name":
+			switch t := value.(type) {
+			case string:
+				server.config.defaultHandlerMame = t
+			}
 		}
 	}
 }
