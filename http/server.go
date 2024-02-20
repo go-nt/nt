@@ -10,7 +10,7 @@ type serverConfig struct {
 	port uint16
 
 	// 默认处理器名称
-	defaultHandlerMame string
+	defaultHandlerName string
 }
 
 type Server struct {
@@ -27,7 +27,7 @@ func (server *Server) initConfig() {
 		// 端口号
 		port: 9999,
 
-		defaultHandlerMame: "",
+		defaultHandlerName: "",
 	}
 }
 
@@ -50,11 +50,10 @@ func (server *Server) Config(config map[string]any) {
 					server.config.port = t
 				}
 			}
-		case "defaultHandlerMame":
-		case "default_handler_name":
+		case "defaultHandlerName", "default_handler_name":
 			switch t := value.(type) {
 			case string:
-				server.config.defaultHandlerMame = t
+				server.config.defaultHandlerName = t
 			}
 		}
 	}
@@ -91,8 +90,8 @@ func (server *Server) Start() {
 				i++
 			}
 
-			if handlerName == "" && server.config.defaultHandlerMame != "" {
-				handlerName = server.config.defaultHandlerMame
+			if handlerName == "" && server.config.defaultHandlerName != "" {
+				handlerName = server.config.defaultHandlerName
 			}
 
 			if handlerName == "" {
