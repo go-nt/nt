@@ -18,6 +18,7 @@ type Response struct {
 func (r *Response) Init(rw http.ResponseWriter) {
 	r.ResponseWriter = new(ResponseWriter)
 	r.ResponseWriter.ResponseWriter = rw
+	r.data = make(map[string]any)
 }
 
 // Header 输出头你息
