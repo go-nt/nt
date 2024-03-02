@@ -21,7 +21,7 @@ func GetConfig(name string) (map[string]any, error) {
 		return config, nil
 	}
 
-	return nil, errors.New("config (" + name + ") not found")
+	return nil, errors.New("db config (" + name + ") not found")
 }
 
 func GetDb(name string) (Driver, error) {
@@ -45,13 +45,13 @@ func GetDb(name string) (Driver, error) {
 		return db, nil
 	}
 
-	return nil, errors.New("no available db")
+	return nil, errors.New("db (" + name + ") not found")
 }
 
 func GetDbByConfig(config map[string]any) (Driver, error) {
 	driverName, ok := config["driver"]
 	if !ok {
-		return nil, errors.New("db driver type is missing")
+		return nil, errors.New("db config parameter(driver) is missing")
 	}
 
 	var db Driver
@@ -61,7 +61,7 @@ func GetDbByConfig(config map[string]any) (Driver, error) {
 		case "mysql":
 			db = new(driver.Mysql)
 		default:
-			return nil, errors.New("unsupported driver type: " + t)
+			return nil, errors.New("db driver(" + t + ") in config is not supported")
 		}
 	}
 
