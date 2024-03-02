@@ -148,7 +148,7 @@ func (driver *Driver) GetValue(sql string, args ...any) (string, error) {
 
 	if rows.Next() {
 		var val string
-		rows.Scan(val)
+		rows.Scan(&val)
 		return val, nil
 	}
 	return "", errors.New("db->GetValue no matched result")
@@ -165,7 +165,7 @@ func (driver *Driver) GetValues(sql string, args ...any) ([]string, error) {
 	var values []string
 	if rows.Next() {
 		var val string
-		if err = rows.Scan(val); err != nil {
+		if err = rows.Scan(&val); err != nil {
 			return nil, err
 		}
 		values = append(values, val)
