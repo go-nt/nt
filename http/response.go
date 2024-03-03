@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 )
 
@@ -40,4 +41,14 @@ func (r *Response) Set(name string, value any) {
 func (r *Response) Json() {
 	content, _ := json.Marshal(r.data)
 	_, _ = r.ResponseWriter.Write([]byte(content))
+}
+
+// Display 显示模板
+func (r *Response) Display(filenames ...string) {
+	tmpl, err := template.ParseFiles(filenames...)
+	if err != nil {
+		return
+	}
+
+	_ = tmpl.Execute(r.ResponseWriter, r.data)
 }
