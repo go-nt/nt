@@ -5,8 +5,8 @@ import (
 )
 
 type Tuple struct {
-	// 数据库
-	db *Db
+	// 搪行器
+	executor *Executor
 
 	// 表名
 	name string
@@ -14,9 +14,15 @@ type Tuple struct {
 	tStruct any
 }
 
-// SetDb 设置数据库
-func (tuple *Tuple) SetDb(db *Db) {
-	tuple.db = db
+// Init 初始化
+func (tuple *Tuple) Init() *Tuple {
+	return tuple
+}
+
+// SetExecutor 设置执行品
+func (tuple *Tuple) SetExecutor(e *Executor) *Tuple {
+	tuple.executor = e
+	return tuple
 }
 
 // SetName 设置名称

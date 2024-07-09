@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
@@ -38,10 +37,12 @@ type DbConfig struct {
 }
 
 type Db struct {
+	Executor
+
 	// 参数配置
 	config *DbConfig
 
-	instance *sql.DB
+	executor *Executor
 }
 
 // initConfig 初始化配置
@@ -143,225 +144,24 @@ func (db *Db) Init() error {
 	if err := instance.Ping(); err != nil {
 		return err
 	}
-	db.instance = instance
+
+	executor := new(Executor)
+	executor.init(ExecutorTypeDb, instance, nil)
+	db.executor = executor
 
 	return nil
 }
 
-// GetValue 查询一个字段的值
-func (db *Db) GetValue(sql string, args ...any) (string, error) {
-	rows, err := db.instance.Query(sql, args...)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
+// Tx 开启事务
+func (db *Db) Tx() (*Executor, error) {
 
-	if rows.Next() {
-		var val string
-		rows.Scan(&val)
-		return val, nil
-	}
-	return "", errors.New("db->GetValue no matched result")
-}
-
-// GetValues 查询一个字段的值
-func (db *Db) GetValues(sql string, args ...any) ([]string, error) {
-	rows, err := db.instance.Query(sql, args...)
+	tx, err := db.executor.getDb().Begin()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var values []string
-	if rows.Next() {
-		var val string
-		if err = rows.Scan(&val); err != nil {
-			return nil, err
-		}
-		values = append(values, val)
-	}
-	return values, nil
-}
+	executor := new(Executor)
+	executor.init(ExecutorTypeDb, nil, tx)
 
-// GetMap 查询一行记录
-func (db *Db) GetMap(sql string, args ...any) (map[string]string, error) {
-	rows, err := db.instance.Query(sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		columns, _ := rows.Columns()
-		columnLen := len(columns)
-
-		columnData := make([]string, columnLen)
-		columnDataPointers := make([]any, columnLen)
-		for i := 0; i < columnLen; i = i + 1 {
-			columnDataPointers[i] = &columnData[i]
-		}
-
-		if err = rows.Scan(columnDataPointers...); err != nil {
-			return nil, err
-		}
-
-		m := make(map[string]string)
-		for i, colName := range columns {
-			val := columnDataPointers[i].(*string)
-			m[colName] = *val
-		}
-
-		return m, nil
-	}
-
-	return nil, errors.New("db->GetMap no matched results")
-}
-
-// GetMaps 查询多行记录
-func (db *Db) GetMaps(sql string, args ...any) ([]map[string]string, error) {
-
-	rows, err := db.instance.Query(sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	columns, _ := rows.Columns()
-	columnLen := len(columns)
-
-	var maps []map[string]string
-	for rows.Next() {
-		columnData := make([]string, columnLen)
-		columnDataPointers := make([]any, columnLen)
-		for i := 0; i < columnLen; i = i + 1 {
-			columnDataPointers[i] = &columnData[i]
-		}
-
-		if err = rows.Scan(columnDataPointers...); err != nil {
-			return nil, err
-		}
-
-		m := make(map[string]string)
-		for i, colName := range columns {
-			val := columnDataPointers[i].(*string)
-			m[colName] = *val
-		}
-
-		maps = append(maps, m)
-	}
-	return maps, nil
-}
-
-// Query 查询，返回查询结果集，用于 select
-func (db *Db) Query(sql string, args ...any) (*sql.Rows, error) {
-	return db.instance.Query(sql, args...)
-}
-
-// Exec 执行，用于 insert / update / delete
-func (db *Db) Exec(sql string, args ...any) (sql.Result, error) {
-	return db.instance.Exec(sql, args...)
-}
-
-// Insert 插入数据
-func (db *Db) Insert(table string, data map[string]any) (sql.Result, error) {
-	sq := "INSERT INTO " + table + "("
-	vs := ""
-	var args []any
-
-	isFirst := false
-	for k, v := range data {
-		if isFirst == false {
-			isFirst = true
-		} else {
-			sq += ","
-			vs += ","
-		}
-
-		sq += k
-		vs += "?"
-
-		args = append(args, v)
-	}
-
-	sq += ") VALUES (" + vs + ")"
-
-	return db.instance.Exec(sq, args...)
-}
-
-// Update 更新数据
-func (db *Db) Update(table string, data map[string]any, primaryKeys ...string) (sql.Result, error) {
-
-	sq := "UPDATE " + table + " SET "
-
-	var where map[string]any
-
-	var args []any
-
-	isFirst := false
-	for k, v := range data {
-
-		for _, primaryKey := range primaryKeys {
-			if k == primaryKey {
-				where[k] = v
-				goto nextData
-			}
-		}
-
-		if isFirst == false {
-			isFirst = true
-		} else {
-			sq += ","
-		}
-
-		sq += k + "=?"
-
-		args = append(args, v)
-
-	nextData:
-	}
-
-	if len(where) > 0 {
-		sq += " WHERE "
-		isFirst = false
-		for k, v := range where {
-			if isFirst == false {
-				isFirst = true
-			} else {
-				sq += ","
-			}
-
-			sq += k + "=?"
-
-			args = append(args, v)
-		}
-	}
-
-	return db.instance.Exec(sq, args...)
-}
-
-// Delete 删除
-func (db *Db) Delete(table string, where map[string]any) (sql.Result, error) {
-	sq := "DELETE FROM " + table + " WHERE "
-
-	var args []any
-	isFirst := false
-	for k, v := range where {
-		if isFirst == false {
-			isFirst = true
-		} else {
-			sq += " AND "
-		}
-
-		sq += k + "=?"
-
-		args = append(args, v)
-	}
-
-	return db.instance.Exec(sq, args...)
-}
-
-// Truncate 清空表
-func (db *Db) Truncate(table string) (sql.Result, error) {
-	s := "TRUNCATE " + table
-	return db.instance.Exec(s)
+	return executor, nil
 }
