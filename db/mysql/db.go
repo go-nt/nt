@@ -161,7 +161,7 @@ func (db *Db) Tx() (*Executor, error) {
 	}
 
 	executor := new(Executor)
-	executor.init(ExecutorTypeDb, nil, tx)
+	executor.init(ExecutorTypeTx, nil, tx)
 
 	return executor, nil
 }
