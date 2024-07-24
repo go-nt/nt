@@ -37,12 +37,10 @@ type DbConfig struct {
 }
 
 type Db struct {
-	Executor
+	*Executor
 
 	// 参数配置
 	config *DbConfig
-
-	executor *Executor
 }
 
 // initConfig 初始化配置
@@ -147,7 +145,7 @@ func (db *Db) Init() error {
 
 	executor := new(Executor)
 	executor.init(ExecutorTypeDb, instance, nil)
-	db.executor = executor
+	db.Executor = executor
 
 	return nil
 }
@@ -155,7 +153,7 @@ func (db *Db) Init() error {
 // Tx 开启事务
 func (db *Db) Tx() (*Executor, error) {
 
-	tx, err := db.executor.getDb().Begin()
+	tx, err := db.Executor.getDb().Begin()
 	if err != nil {
 		return nil, err
 	}

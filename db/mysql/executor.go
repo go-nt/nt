@@ -141,7 +141,7 @@ func (e *Executor) GetMap(sq string, args ...any) (map[string]string, error) {
 	return nil, errors.New("db->GetMap no matched results")
 }
 
-// GetMaps 查询多行记录
+// GetBind 查询多行记录
 func (e *Executor) GetBind(sq string, args ...any) ([]map[string]string, error) {
 	var rows *sql.Rows
 	var err error
