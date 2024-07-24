@@ -105,9 +105,6 @@ func (server *Server) Start() {
 					c := new(Context)
 					c.Init(r, w)
 
-					// 回收资源
-					defer c.Gc()
-
 					handler.OnRequest(c)
 				} else {
 					_, err := w.Write([]byte("Handler(" + handlerName + ") does not exist"))
