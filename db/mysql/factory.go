@@ -6,7 +6,7 @@ import (
 )
 
 var configs map[string]map[string]any
-var dbs map[string]*Db
+var drivers map[string]*Driver
 
 func SetConfig(name string, config map[string]any) {
 	if configs == nil {
@@ -17,42 +17,42 @@ func SetConfig(name string, config map[string]any) {
 
 // FormatIniConfig 格式化 ini 配置
 func FormatIniConfig(section *ini.Section) (map[string]any, error) {
-	dbConfigKeyHost, err := section.GetKey("host")
+	configKeyHost, err := section.GetKey("host")
 	if err != nil {
 		return nil, errors.New("mysql config parameter(host) not found in ini section")
 	}
 
-	dbConfigKeyPort, err := section.GetKey("port")
+	configKeyPort, err := section.GetKey("port")
 	if err != nil {
 		return nil, errors.New("mysql config parameter(port) not found in ini section")
 	}
 
-	dbConfigKeyPortInt, err := dbConfigKeyPort.Int()
-	if err != nil || dbConfigKeyPortInt <= 0 || dbConfigKeyPortInt >= 65535 {
+	configKeyPortInt, err := configKeyPort.Int()
+	if err != nil || configKeyPortInt <= 0 || configKeyPortInt >= 65535 {
 		return nil, errors.New("mysql config parameter(port) is not a valid value")
 	}
 
-	dbConfigKeyUsername, err := section.GetKey("username")
+	configKeyUsername, err := section.GetKey("username")
 	if err != nil {
 		return nil, errors.New("mysql config parameter(username) not found in ini section")
 	}
 
-	dbConfigKeyPassword, err := section.GetKey("password")
+	configKeyPassword, err := section.GetKey("password")
 	if err != nil {
 		return nil, errors.New("mysql config parameter(password) not found in ini section")
 	}
 
-	dbConfigKeyName, err := section.GetKey("name")
+	configKeyName, err := section.GetKey("name")
 	if err != nil {
 		return nil, errors.New("mysql config parameter(name) not found in ini section")
 	}
 
 	return map[string]any{
-		"host":     dbConfigKeyHost.String(),
-		"port":     dbConfigKeyPortInt,
-		"username": dbConfigKeyUsername.String(),
-		"password": dbConfigKeyPassword.String(),
-		"name":     dbConfigKeyName.String(),
+		"host":     configKeyHost.String(),
+		"port":     configKeyPortInt,
+		"username": configKeyUsername.String(),
+		"password": configKeyPassword.String(),
+		"name":     configKeyName.String(),
 	}, nil
 }
 
@@ -72,8 +72,8 @@ func GetConfig(name string) (map[string]any, error) {
 }
 
 // GetDb 获取数据库实例
-func GetDb(name string) (*Db, error) {
-	db, ok := dbs[name]
+func GetDb(name string) (*Driver, error) {
+	db, ok := drivers[name]
 	if ok {
 		return db, nil
 	}
@@ -85,11 +85,11 @@ func GetDb(name string) (*Db, error) {
 			return nil, err
 		}
 
-		if dbs == nil {
-			dbs = make(map[string]*Db)
+		if drivers == nil {
+			drivers = make(map[string]*Driver)
 		}
 
-		dbs[name] = db
+		drivers[name] = db
 		return db, nil
 	}
 
@@ -97,8 +97,8 @@ func GetDb(name string) (*Db, error) {
 }
 
 // GetDbByConfig 按配置文件创建数据库实例
-func GetDbByConfig(config map[string]any) (*Db, error) {
-	db := new(Db)
+func GetDbByConfig(config map[string]any) (*Driver, error) {
+	db := new(Driver)
 	db.SetConfig(config)
 	err := db.Init()
 	if err != nil {

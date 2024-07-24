@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type DbConfig struct {
+type Config struct {
 	// 驱动
 	driver string
 
@@ -36,16 +36,16 @@ type DbConfig struct {
 	maxOpenConns int
 }
 
-type Db struct {
+type Driver struct {
 	*Executor
 
 	// 参数配置
-	config *DbConfig
+	config *Config
 }
 
 // initConfig 初始化配置
-func (db *Db) initConfig() {
-	db.config = &DbConfig{
+func (d *Driver) initConfig() {
+	d.config = &Config{
 		driver:          "mysql",
 		host:            "127.0.0.1",
 		port:            3306,
@@ -59,9 +59,9 @@ func (db *Db) initConfig() {
 }
 
 // SetConfig 参数配置
-func (db *Db) SetConfig(config map[string]any) {
-	if db.config == nil {
-		db.initConfig()
+func (d *Driver) SetConfig(config map[string]any) {
+	if d.config == nil {
+		d.initConfig()
 	}
 
 	for key, value := range config {
@@ -69,50 +69,50 @@ func (db *Db) SetConfig(config map[string]any) {
 		case "host":
 			switch t := value.(type) {
 			case string:
-				db.config.host = t
+				d.config.host = t
 			}
 		case "port":
 			switch t := value.(type) {
 			case int:
 				if t > 0 && t < 65535 {
-					db.config.port = t
+					d.config.port = t
 				}
 			}
 		case "username":
 			switch t := value.(type) {
 			case string:
-				db.config.username = t
+				d.config.username = t
 			}
 		case "password":
 			switch t := value.(type) {
 			case string:
-				db.config.password = t
+				d.config.password = t
 			}
 		case "name":
 			switch t := value.(type) {
 			case string:
-				db.config.name = t
+				d.config.name = t
 			}
 		case "maxOpenConns":
 			switch t := value.(type) {
 			case int:
-				db.config.maxOpenConns = t
+				d.config.maxOpenConns = t
 			}
 		case "maxIdleConns":
 			switch t := value.(type) {
 			case int:
-				db.config.maxIdleConns = t
+				d.config.maxIdleConns = t
 			}
 		case "connMaxLifetime":
 			switch t := value.(type) {
 			case time.Duration:
-				db.config.connMaxLifetime = t
+				d.config.connMaxLifetime = t
 			case int:
-				db.config.connMaxLifetime = time.Duration(t) * time.Second
+				d.config.connMaxLifetime = time.Duration(t) * time.Second
 			case string:
-				d, err := time.ParseDuration(t)
+				du, err := time.ParseDuration(t)
 				if err == nil {
-					db.config.connMaxLifetime = d
+					d.config.connMaxLifetime = du
 				}
 			}
 		}
@@ -120,24 +120,24 @@ func (db *Db) SetConfig(config map[string]any) {
 }
 
 // GetConfig 参数配置
-func (db *Db) GetConfig() *DbConfig {
-	if db.config == nil {
-		db.initConfig()
+func (d *Driver) GetConfig() *Config {
+	if d.config == nil {
+		d.initConfig()
 	}
 
-	return db.config
+	return d.config
 }
 
 // Init 初始化
-func (db *Db) Init() error {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.config.username, db.config.password, db.config.host, db.config.port, db.config.name)
-	instance, err := sql.Open(db.config.driver, dsn)
+func (d *Driver) Init() error {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", d.config.username, d.config.password, d.config.host, d.config.port, d.config.name)
+	instance, err := sql.Open(d.config.driver, dsn)
 	if err != nil {
 		return err
 	}
-	instance.SetMaxOpenConns(db.config.maxOpenConns)
-	instance.SetMaxIdleConns(db.config.maxIdleConns)
-	instance.SetConnMaxLifetime(db.config.connMaxLifetime)
+	instance.SetMaxOpenConns(d.config.maxOpenConns)
+	instance.SetMaxIdleConns(d.config.maxIdleConns)
+	instance.SetConnMaxLifetime(d.config.connMaxLifetime)
 
 	if err := instance.Ping(); err != nil {
 		return err
@@ -145,15 +145,15 @@ func (db *Db) Init() error {
 
 	executor := new(Executor)
 	executor.init(ExecutorTypeDb, instance, nil)
-	db.Executor = executor
+	d.Executor = executor
 
 	return nil
 }
 
 // Tx 开启事务
-func (db *Db) Tx() (*Executor, error) {
+func (d *Driver) Tx() (*Executor, error) {
 
-	tx, err := db.Executor.getDb().Begin()
+	tx, err := d.Executor.getDb().Begin()
 	if err != nil {
 		return nil, err
 	}
