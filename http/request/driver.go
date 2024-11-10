@@ -283,28 +283,30 @@ func (d *Driver) IsAjax() bool {
 	return d.Header("X-Requested-With", "") == "XMLHttpRequest"
 }
 
-func (d *Driver) GetBind(obj *any) error {
-	return d.Bind("get", obj)
+func (d *Driver) BindGet(obj *any) error {
+	return d.Bind(obj, "get")
 }
 
-func (d *Driver) PostBind(obj *any) error {
-	return d.Bind("post", obj)
+func (d *Driver) BindPost(obj *any) error {
+	return d.Bind(obj, "post")
 }
 
-func (d *Driver) BodyJsonBind(obj *any) error {
-	return d.Bind("body-json", obj)
+func (d *Driver) BindBodyJson(obj *any) error {
+	return d.Bind(obj, "body-json")
 }
 
-func (d *Driver) BodyProtobufBind(obj *any) error {
-	return d.Bind("body-protobuf", obj)
+func (d *Driver) BindBodyProtobuf(obj *any) error {
+	return d.Bind(obj, "body-protobuf")
 }
 
-func (d *Driver) Bind(dsType string, obj *any) error {
+func (d *Driver) Bind(obj *any, dsType string) error {
 
 	switch dsType {
 	case "get":
+		// TODO
 
 	case "post":
+		// TODO
 
 	case "body-json":
 		bodyBytes, err := io.ReadAll(d.Request.Body)
