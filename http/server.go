@@ -1,13 +1,16 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/go-ini/ini"
 )
 
-type serverConfig struct {
+type Config struct {
 	// 端口号
-	port uint16
+	port int
 
 	// 默认处理器名称
 	defaultHandlerName string
@@ -15,7 +18,7 @@ type serverConfig struct {
 
 type Server struct {
 	// 参数配置
-	config *serverConfig
+	config *Config
 
 	// 处理器
 	handlers map[string]Handler
@@ -23,7 +26,7 @@ type Server struct {
 
 // initConfig 初始化配置
 func (server *Server) initConfig() {
-	server.config = &serverConfig{
+	server.config = &Config{
 		// 端口号
 		port: 9999,
 
@@ -32,7 +35,7 @@ func (server *Server) initConfig() {
 }
 
 // Config 参数配置
-func (server *Server) Config(config map[string]any) {
+func (server *Server) SetConfig(config map[string]any) error {
 	if server.config == nil {
 		server.initConfig()
 	}
@@ -43,20 +46,63 @@ func (server *Server) Config(config map[string]any) {
 			switch t := value.(type) {
 			case int:
 				if t > 0 && t < 65535 {
-					server.config.port = uint16(t)
-				}
-			case uint16:
-				if t > 0 {
 					server.config.port = t
+				} else {
+					return errors.New("http server config parameter(port) is not a valid value")
 				}
 			}
 		case "defaultHandlerName", "default_handler_name":
 			switch t := value.(type) {
 			case string:
-				server.config.defaultHandlerName = t
+				if t != "" {
+					server.config.defaultHandlerName = t
+				} else {
+					return errors.New("http server config parameter(default_handler_name) is not a valid value")
+				}
 			}
 		}
 	}
+
+	return nil
+}
+
+// SetIniConfig ini 参数配置
+func (server *Server) SetIniConfig(section *ini.Section) error {
+	if server.config == nil {
+		server.initConfig()
+	}
+
+	configKeyPort, err := section.GetKey("port")
+	if err == nil {
+		t, err := configKeyPort.Int()
+		if err == nil && t > 0 && t < 65535 {
+			server.config.port = t
+		} else {
+			return errors.New("http server config parameter(port) is not a valid value")
+		}
+	}
+
+	configKeyDefaultHandlerName, err := section.GetKey("defaultHandlerName")
+	if err == nil {
+		t := configKeyDefaultHandlerName.String()
+		if t == "" {
+			server.config.defaultHandlerName = t
+		} else {
+			return errors.New("http server config parameter(defaultHandlerName) is not a valid value")
+		}
+	} else {
+		configKeyDefaultHandlerName, err := section.GetKey("default_handler_name")
+		if err == nil {
+			t := configKeyDefaultHandlerName.String()
+			if t != "" {
+				server.config.defaultHandlerName = t
+			} else {
+				return errors.New("http server config parameter(default_handler_name) is not a valid value")
+			}
+		}
+	}
+
+	return nil
 }
 
 func (server *Server) AddHandler(handlerName string, handler Handler) {
