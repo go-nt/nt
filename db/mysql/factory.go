@@ -73,14 +73,14 @@ func GetConfig(name string) (map[string]any, error) {
 
 // GetDb 获取数据库实例
 func GetDb(name string) (*Driver, error) {
-	db, ok := drivers[name]
+	d, ok := drivers[name]
 	if ok {
-		return db, nil
+		return d, nil
 	}
 
 	config, ok := configs[name]
 	if ok {
-		db, err := GetDbByConfig(config)
+		d, err := GetDbByConfig(config)
 		if err != nil {
 			return nil, err
 		}
@@ -89,8 +89,8 @@ func GetDb(name string) (*Driver, error) {
 			drivers = make(map[string]*Driver)
 		}
 
-		drivers[name] = db
-		return db, nil
+		drivers[name] = d
+		return d, nil
 	}
 
 	return nil, errors.New("mysql (" + name + ") not found")
@@ -98,12 +98,12 @@ func GetDb(name string) (*Driver, error) {
 
 // GetDbByConfig 按配置文件创建数据库实例
 func GetDbByConfig(config map[string]any) (*Driver, error) {
-	db := new(Driver)
-	db.SetConfig(config)
-	err := db.Init()
+	d := new(Driver)
+	d.SetConfig(config)
+	err := d.Init()
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	return d, nil
 }

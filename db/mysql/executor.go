@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"errors"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -141,44 +142,10 @@ func (e *Executor) GetMap(sq string, args ...any) (map[string]string, error) {
 	return nil, errors.New("db->GetMap no matched results")
 }
 
-// GetBind 查询多行记录
-func (e *Executor) GetBind(sq string, args ...any) ([]map[string]string, error) {
-	var rows *sql.Rows
-	var err error
-	if e.executorType == ExecutorTypeDb {
-		rows, err = e.db.Query(sq, args...)
-	} else {
-		rows, err = e.tx.Query(sq, args...)
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	columns, _ := rows.Columns()
-	columnLen := len(columns)
-
-	var maps []map[string]string
-	for rows.Next() {
-		columnData := make([]string, columnLen)
-		columnDataPointers := make([]any, columnLen)
-		for i := 0; i < columnLen; i = i + 1 {
-			columnDataPointers[i] = &columnData[i]
-		}
-
-		if err = rows.Scan(columnDataPointers...); err != nil {
-			return nil, err
-		}
-
-		m := make(map[string]string)
-		for i, colName := range columns {
-			val := columnDataPointers[i].(*string)
-			m[colName] = *val
-		}
-
-		maps = append(maps, m)
-	}
-	return maps, nil
+// GetBind 查询记录, 缓定到指定对象
+func (e *Executor) GetBind(bind *any, sq string, args ...any) error {
+	// TODO
+	return nil
 }
 
 // GetMaps 查询多行记录
@@ -247,7 +214,7 @@ func (e *Executor) Insert(table string, data map[string]any) (sql.Result, error)
 
 	isFirst := false
 	for k, v := range data {
-		if isFirst == false {
+		if !isFirst {
 			isFirst = true
 		} else {
 			sq += ","
@@ -274,7 +241,7 @@ func (e *Executor) Update(table string, data map[string]any, primaryKeys ...stri
 
 	sq := "UPDATE " + table + " SET "
 
-	var where map[string]any
+	where := make(map[string]any)
 
 	var args []any
 
@@ -288,7 +255,7 @@ func (e *Executor) Update(table string, data map[string]any, primaryKeys ...stri
 			}
 		}
 
-		if isFirst == false {
+		if !isFirst {
 			isFirst = true
 		} else {
 			sq += ","
@@ -305,7 +272,7 @@ func (e *Executor) Update(table string, data map[string]any, primaryKeys ...stri
 		sq += " WHERE "
 		isFirst = false
 		for k, v := range where {
-			if isFirst == false {
+			if !isFirst {
 				isFirst = true
 			} else {
 				sq += ","
@@ -331,7 +298,7 @@ func (e *Executor) Delete(table string, where map[string]any) (sql.Result, error
 	var args []any
 	isFirst := false
 	for k, v := range where {
-		if isFirst == false {
+		if !isFirst {
 			isFirst = true
 		} else {
 			sq += " AND "
