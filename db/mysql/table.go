@@ -1,9 +1,10 @@
 package mysql
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Table struct {
