@@ -85,7 +85,7 @@ func (server *Server) SetIniConfig(section *ini.Section) error {
 	configKeyDefaultHandlerName, err := section.GetKey("defaultHandlerName")
 	if err == nil {
 		t := configKeyDefaultHandlerName.String()
-		if t == "" {
+		if t != "" {
 			server.config.defaultHandlerName = t
 		} else {
 			return errors.New("http server config parameter(defaultHandlerName) is not a valid value")
