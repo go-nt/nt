@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -164,6 +165,18 @@ func (server *Server) Start() {
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(server.config.port)), nil)
 	if err != nil {
+		fmt.Println("go-nt server started err: ", err)
 		return
 	}
+
+	fmt.Println("go-nt server started on prot " + strconv.Itoa(int(server.config.port)))
+	fmt.Println("go-nt server handlers:")
+	for handlerName := range server.handlers {
+		if handlerName == server.config.defaultHandlerName {
+			fmt.Println(handlerName + " (default)")
+		} else {
+			fmt.Println(handlerName)
+		}
+	}
+
 }
