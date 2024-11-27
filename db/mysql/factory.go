@@ -2,67 +2,158 @@ package mysql
 
 import (
 	"errors"
+	"time"
+
 	"github.com/go-ini/ini"
 )
 
-var configs map[string]map[string]any
-var drivers map[string]*Driver
+type Config struct {
 
-func SetConfig(name string, config map[string]any) {
-	if configs == nil {
-		configs = make(map[string]map[string]any)
-	}
-	configs[name] = config
+	// 驱动：mysql | sqllite3 | postgress
+	driver string
+
+	// 主机名
+	host string
+
+	// 端口号
+	port int
+
+	// 用户名
+	username string
+
+	// 密码
+	password string
+
+	// 数据库名
+	name string
+
+	// 最长生命周期
+	connMaxLifetime time.Duration
+
+	// 最大空闲连接数
+	maxIdleConns int
+
+	// 最大连接数，0-不限制
+	maxOpenConns int
 }
 
-// FormatIniConfig 格式化 ini 配置
-func FormatIniConfig(section *ini.Section) (map[string]any, error) {
-	configKeyHost, err := section.GetKey("host")
-	if err != nil {
-		return nil, errors.New("mysql config parameter(host) not found in ini section")
+var configs map[string]*Config
+var drivers map[string]*Driver
+
+// initConfig 初始化配置
+func initConfig() *Config {
+	return &Config{
+		driver:          "mysql",
+		host:            "127.0.0.1",
+		port:            3306,
+		username:        "root",
+		password:        "",
+		name:            "go-nt",
+		maxOpenConns:    4,
+		maxIdleConns:    4,
+		connMaxLifetime: time.Minute * 10,
+	}
+}
+
+// SetIniConfig 配置
+func SetConfig(name string, c map[string]any) error {
+	if configs == nil {
+		configs = make(map[string]*Config)
 	}
 
-	configKeyPort, err := section.GetKey("port")
-	if err != nil {
-		return nil, errors.New("mysql config parameter(port) not found in ini section")
+	config := initConfig()
+
+	for key, value := range c {
+		switch key {
+		case "host":
+			switch t := value.(type) {
+			case string:
+				config.host = t
+			}
+		case "port":
+			switch t := value.(type) {
+			case int:
+				if t > 0 && t < 65535 {
+					config.port = t
+				} else {
+					return errors.New("mysql config parameter(port) is not a valid value")
+				}
+			}
+		case "username":
+			switch t := value.(type) {
+			case string:
+				config.username = t
+			}
+		case "password":
+			switch t := value.(type) {
+			case string:
+				config.password = t
+			}
+		case "name":
+			switch t := value.(type) {
+			case string:
+				config.name = t
+			}
+		case "maxOpenConns":
+			switch t := value.(type) {
+			case int:
+				config.maxOpenConns = t
+			}
+		case "maxIdleConns":
+			switch t := value.(type) {
+			case int:
+				config.maxIdleConns = t
+			}
+		case "connMaxLifetime":
+			switch t := value.(type) {
+			case time.Duration:
+				config.connMaxLifetime = t
+			case int:
+				config.connMaxLifetime = time.Duration(t) * time.Second
+			case string:
+				du, err := time.ParseDuration(t)
+				if err == nil {
+					config.connMaxLifetime = du
+				}
+			}
+		}
 	}
 
-	configKeyPortInt, err := configKeyPort.Int()
-	if err != nil || configKeyPortInt <= 0 || configKeyPortInt >= 65535 {
-		return nil, errors.New("mysql config parameter(port) is not a valid value")
+	configs[name] = config
+
+	return nil
+}
+
+// SetIniConfig 设置 ini 配置
+func SetIniConfig(name string, section *ini.Section) error {
+	if configs == nil {
+		configs = make(map[string]*Config)
 	}
 
-	configKeyUsername, err := section.GetKey("username")
-	if err != nil {
-		return nil, errors.New("mysql config parameter(username) not found in ini section")
+	config := initConfig()
+
+	section.MapTo(config)
+
+	if config.host == "" {
+		return errors.New("mysql config parameter(host) not found in ini section")
 	}
 
-	configKeyPassword, err := section.GetKey("password")
-	if err != nil {
-		return nil, errors.New("mysql config parameter(password) not found in ini section")
+	if config.port <= 0 || config.port >= 65535 {
+		return errors.New("mysql config parameter(port) is not a valid value")
 	}
 
-	configKeyName, err := section.GetKey("name")
-	if err != nil {
-		return nil, errors.New("mysql config parameter(name) not found in ini section")
-	}
+	configs[name] = config
 
-	return map[string]any{
-		"host":     configKeyHost.String(),
-		"port":     configKeyPortInt,
-		"username": configKeyUsername.String(),
-		"password": configKeyPassword.String(),
-		"name":     configKeyName.String(),
-	}, nil
+	return nil
 }
 
 // GetConfigs 获取配置项
-func GetConfigs(name string) map[string]map[string]any {
+func GetConfigs(name string) map[string]*Config {
 	return configs
 }
 
 // GetConfig 获取配置项
-func GetConfig(name string) (map[string]any, error) {
+func GetConfig(name string) (*Config, error) {
 	config, ok := configs[name]
 	if ok {
 		return config, nil
@@ -80,7 +171,9 @@ func GetDb(name string) (*Driver, error) {
 
 	config, ok := configs[name]
 	if ok {
-		d, err := GetDbByConfig(config)
+		d := new(Driver)
+		d.SetConfig(config)
+		err := d.Init()
 		if err != nil {
 			return nil, err
 		}
@@ -94,16 +187,4 @@ func GetDb(name string) (*Driver, error) {
 	}
 
 	return nil, errors.New("mysql (" + name + ") not found")
-}
-
-// GetDbByConfig 按配置文件创建数据库实例
-func GetDbByConfig(config map[string]any) (*Driver, error) {
-	d := new(Driver)
-	d.SetConfig(config)
-	err := d.Init()
-	if err != nil {
-		return nil, err
-	}
-
-	return d, nil
 }
