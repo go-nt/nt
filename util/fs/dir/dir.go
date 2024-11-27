@@ -53,11 +53,17 @@ func Remove(path string) error {
 // 拷贝文件夹
 func Copy(src string, dst string) error {
 
-	// 目标目录不存在时创建目录
-	_, err := os.ReadDir(dst)
-	if err != nil {
-		err = os.MkdirAll(dst, os.ModePerm)
-		if err != nil {
+	// 检测目标目录
+	dstInfo, err := os.Stat(dst)
+	if err == nil {
+		if !dstInfo.IsDir() {
+			return os.MkdirAll(dst, os.ModePerm)
+		}
+	} else {
+		if os.IsNotExist(err) {
+			return os.MkdirAll(dst, os.ModePerm)
+		} else {
+			// 无权限、文件损坏等
 			return err
 		}
 	}
