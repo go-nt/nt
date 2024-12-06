@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -42,8 +43,12 @@ func (d *Driver) Json() {
 func (d *Driver) Display(filenames ...string) {
 	tmpl, err := template.ParseFiles(filenames...)
 	if err != nil {
+		fmt.Printf("response display error: %#v\n", err)
 		return
 	}
 
-	_ = tmpl.Execute(d.ResponseWriter, d.data)
+	err = tmpl.Execute(d.ResponseWriter, d.data)
+	if err != nil {
+		fmt.Printf("response display error: %#v\n", err)
+	}
 }
