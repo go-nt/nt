@@ -126,6 +126,10 @@ func (server *Server) Start() {
 		if server.handlers != nil {
 
 			path := r.URL.Path
+			if path == "/favicon.ico" {
+				return
+			}
+
 			handlerName := ""
 			i := 1
 			l := len(path)
@@ -135,6 +139,10 @@ func (server *Server) Start() {
 					break
 				}
 				i++
+			}
+
+			if handlerName == "" && l > 1 {
+				handlerName = path[1:l]
 			}
 
 			if handlerName == "" && server.config.defaultHandlerName != "" {
