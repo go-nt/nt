@@ -171,7 +171,7 @@ func (server *Server) Start() {
 		}
 	})
 
-	fmt.Println("go-nt server starting on prot " + strconv.Itoa(int(server.config.port)))
+	fmt.Println("go-nt server is listening on prot " + strconv.Itoa(int(server.config.port)))
 	fmt.Println("go-nt server handlers:")
 	for handlerName := range server.handlers {
 		if handlerName == server.config.defaultHandlerName {
