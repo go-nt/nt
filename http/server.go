@@ -171,8 +171,8 @@ func (server *Server) Start() {
 		}
 	})
 
-	fmt.Println("go-nt server is listening on prot " + strconv.Itoa(int(server.config.port)))
-	fmt.Println("go-nt server handlers:")
+	fmt.Println("go-nt http server is listening on prot " + strconv.Itoa(int(server.config.port)))
+	fmt.Println("go-nt http server handlers:")
 	for handlerName := range server.handlers {
 		if handlerName == server.config.defaultHandlerName {
 			fmt.Println(handlerName + " (default)")
@@ -183,7 +183,7 @@ func (server *Server) Start() {
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(server.config.port)), nil)
 	if err != nil {
-		fmt.Println("go-nt server started err: ", err)
+		fmt.Println("go-nt http server started err: ", err)
 		return
 	}
 
