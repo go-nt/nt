@@ -7,6 +7,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
+	"strconv"
+	"strings"
 )
 
 type Driver struct {
@@ -283,43 +286,233 @@ func (d *Driver) IsAjax() bool {
 	return d.Header("X-Requested-With", "") == "XMLHttpRequest"
 }
 
-func (d *Driver) BindGet(obj *any) error {
-	return d.Bind(obj, "get")
+func (d *Driver) GetBind(ptr any) error {
+	return d.bind(ptr, "get")
 }
 
-func (d *Driver) BindPost(obj *any) error {
-	return d.Bind(obj, "post")
+func (d *Driver) PostBind(ptr any) error {
+	return d.bind(ptr, "post")
 }
 
-func (d *Driver) BindBodyJson(obj *any) error {
-	return d.Bind(obj, "body-json")
+func (d *Driver) BodyJsonBind(ptr any) error {
+	return d.bind(ptr, "body-json")
 }
 
-func (d *Driver) BindBodyProtobuf(obj *any) error {
-	return d.Bind(obj, "body-protobuf")
-}
-
-func (d *Driver) Bind(obj *any, dsType string) error {
-
-	switch dsType {
-	case "get":
-		// TODO
-
-	case "post":
-		// TODO
-
-	case "body-json":
-		bodyBytes, err := io.ReadAll(d.Request.Body)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(bodyBytes, obj)
-	case "body-protobuf":
-		bodyBytes, err := io.ReadAll(d.Request.Body)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(bodyBytes, obj)
+func (d *Driver) bind(ptr any, dsType string) error {
+	rv := reflect.ValueOf(ptr)
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("request bind error: param of ptr is not a pointer")
 	}
-	return errors.New("unknown data source type of request")
+
+	rv = rv.Elem()
+
+	// json 中为切片的情况
+	if dsType == "body-json" {
+		bodyBytes, err := io.ReadAll(d.Request.Body)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(bodyBytes, rv)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return d.bindValue(rv, dsType)
+}
+
+// 绑定
+func (d *Driver) bindValue(rv reflect.Value, dsType string) error {
+	rt := rv.Type()
+	if rt.Kind() != reflect.Struct {
+		return errors.New("request bind error: param of ptr is not a struct")
+	}
+
+	for i := 0; i < rv.NumField(); i++ {
+		rvField := rv.Field(i)
+		rtField := rt.Field(i)
+
+		tag := rtField.Tag.Get("bind")
+		if tag == "-" {
+			continue
+		}
+
+		if len(rtField.Name) == 0 || !rvField.CanSet() {
+			continue
+		}
+
+		if tag == "" {
+			tag = rtField.Name
+		}
+
+		rvFieldKind := rvField.Kind()
+
+		switch rvFieldKind {
+		case reflect.String,
+			reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
+
+			var val string
+			switch dsType {
+			case "get":
+				val = d.Get(tag, "")
+			case "post":
+				val = d.Post(tag, "")
+			case "header":
+				val = d.Header(tag, "")
+			case "cookie":
+				val = d.Cookie(tag, "")
+			}
+
+			switch rvFieldKind {
+			case reflect.String:
+				rvField.SetString(val)
+			case reflect.Bool:
+				if val == "true" || val == "1" {
+					rvField.SetBool(true)
+				} else {
+					rvField.SetBool(false)
+				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				valInt64, err := strconv.ParseInt(val, 10, 64)
+				if err == nil {
+					rvField.SetInt(valInt64)
+				}
+			case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				valUint64, err := strconv.ParseUint(val, 10, 64)
+				if err == nil {
+					rvField.SetUint(valUint64)
+				}
+			case reflect.Float32, reflect.Float64:
+				valFloat64, err := strconv.ParseFloat(val, 64)
+				if err == nil {
+					rvField.SetFloat(valFloat64)
+				}
+			}
+
+		case reflect.Slice:
+
+			var vals []string
+			switch dsType {
+			case "get":
+				vals = d.GetArray(tag + "[]")
+			case "post":
+				vals = d.PostArray(tag + "[]")
+			case "header":
+				vals = d.HeaderArray(tag + "[]")
+			case "cookie":
+				vals = strings.Split(d.Cookie(tag, ""), ",")
+			}
+
+			if len(vals) > 0 {
+				newSlice := reflect.MakeSlice(rtField.Type, 0, len(vals))
+				switch rtField.Type.Elem().Kind() {
+				case reflect.String:
+					newSlice = reflect.AppendSlice(newSlice, reflect.ValueOf(vals))
+				case reflect.Bool:
+					for _, val := range vals {
+						if val == "true" || val == "1" {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(true))
+						} else {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(false))
+						}
+					}
+				case reflect.Int:
+					for _, val := range vals {
+						valInt64, err := strconv.ParseInt(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(int(valInt64)))
+						}
+					}
+				case reflect.Int8:
+					for _, val := range vals {
+						valInt64, err := strconv.ParseInt(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(int8(valInt64)))
+						}
+					}
+				case reflect.Int16:
+					for _, val := range vals {
+						valInt64, err := strconv.ParseInt(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(int16(valInt64)))
+						}
+					}
+				case reflect.Int32:
+					for _, val := range vals {
+						valInt64, err := strconv.ParseInt(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(int32(valInt64)))
+						}
+					}
+				case reflect.Int64:
+					for _, val := range vals {
+						valInt64, err := strconv.ParseInt(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(valInt64))
+						}
+					}
+				case reflect.Uint:
+					for _, val := range vals {
+						valUint64, err := strconv.ParseUint(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(uint(valUint64)))
+						}
+					}
+				case reflect.Uint8:
+					for _, val := range vals {
+						valUint64, err := strconv.ParseUint(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(uint8(valUint64)))
+						}
+					}
+				case reflect.Uint16:
+					for _, val := range vals {
+						valUint64, err := strconv.ParseUint(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(uint16(valUint64)))
+						}
+					}
+				case reflect.Uint32:
+					for _, val := range vals {
+						valUint64, err := strconv.ParseUint(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(uint32(valUint64)))
+						}
+					}
+				case reflect.Uint64:
+					for _, val := range vals {
+						valUint64, err := strconv.ParseUint(val, 10, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(valUint64))
+						}
+					}
+				case reflect.Float32:
+					for _, val := range vals {
+						valFloat64, err := strconv.ParseFloat(val, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(float32(valFloat64)))
+						}
+					}
+				case reflect.Float64:
+					for _, val := range vals {
+						valFloat64, err := strconv.ParseFloat(val, 64)
+						if err == nil {
+							newSlice = reflect.Append(newSlice, reflect.ValueOf(valFloat64))
+						}
+					}
+				}
+
+				rvField.Set(newSlice)
+			}
+
+		}
+	}
+
+	return nil
 }
