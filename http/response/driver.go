@@ -23,6 +23,11 @@ func (d *Driver) Header(name string, value string) {
 	d.ResponseWriter.Header().Set(name, value)
 }
 
+// Cookie 输出 cookie
+func (d *Driver) Cookie(cookie *http.Cookie) {
+	http.SetCookie(d.ResponseWriter, cookie)
+}
+
 // Write 输出内容
 func (d *Driver) Write(content string) {
 	_, _ = d.ResponseWriter.Write([]byte(content))
