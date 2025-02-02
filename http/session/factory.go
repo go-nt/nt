@@ -4,7 +4,7 @@ import (
 	ntHttp "github.com/go-nt/nt/http"
 )
 
-func NewSession(ctx *ntHttp.Context) *Driver {
+func NewSession(ctx *ntHttp.Context) Driver {
 
 	var d Driver
 
@@ -17,5 +17,5 @@ func NewSession(ctx *ntHttp.Context) *Driver {
 
 	d.Init(config, ctx)
 
-	return &d
+	return d
 }

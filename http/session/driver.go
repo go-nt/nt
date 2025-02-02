@@ -15,16 +15,19 @@ type Driver interface {
 	Save()
 
 	// Get 获取 session 值
-	Get(key string) any
+	Get(name string) any
+
+	// Get 获取 session 值
+	GetFormat(name string) *Format
 
 	// Set 向 session 中写入
-	Set(key string, val any)
+	Set(name string, value any)
 
 	// Has 是否已设置指定名称的 session
-	Has(key string) bool
+	Has(name string) bool
 
 	// Delete 删除指定锓名的 session
-	Delete(key string) any
+	Delete(name string) any
 
 	// Wipe 清空 session
 	Wipe()

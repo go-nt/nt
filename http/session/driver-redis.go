@@ -90,6 +90,17 @@ func (d *DriverRedis) Get(name string) any {
 	return value
 }
 
+// GetFormat 获取 GET 格式化数据
+func (d *DriverRedis) GetFormat(name string) *Format {
+	if value, ok := d.data[name]; ok {
+		return &Format{
+			Value: value,
+		}
+	}
+
+	return &Format{}
+}
+
 // Set 向 session 中写入
 func (d *DriverRedis) Set(name string, value any) {
 	d.data[name] = value
