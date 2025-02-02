@@ -304,8 +304,6 @@ func (d *Driver) bind(ptr any, dsType string) error {
 		return errors.New("request bind error: param of ptr is not a pointer")
 	}
 
-	rv = rv.Elem()
-
 	// json 中为切片的情况
 	if dsType == "body-json" {
 		bodyBytes, err := io.ReadAll(d.Request.Body)
@@ -313,13 +311,15 @@ func (d *Driver) bind(ptr any, dsType string) error {
 			return err
 		}
 
-		err = json.Unmarshal(bodyBytes, rv)
+		err = json.Unmarshal(bodyBytes, ptr)
 		if err != nil {
 			return err
 		}
 
 		return nil
 	}
+
+	rv = rv.Elem()
 
 	return d.bindValue(rv, dsType)
 }
